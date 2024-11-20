@@ -24,7 +24,7 @@ public class BotClient {
     //while loop g tau kenapa masih g bisa tapi bisa input kai client biasa
     private void writeMessage() throws IOException{
         while(true){
-            out.writeUTF("BotInput\n");
+            out.writeUTF("BotInput");
             out.flush();
 
             String serverResponse = in.readLine();
@@ -33,6 +33,12 @@ public class BotClient {
     }
 
     public static void main(String[] args) {
-        new Client();
+        while(true){
+            new Thread(){
+                public void run() {
+                    new BotClient();
+                };
+            }.start();
+        }
     }
 }
