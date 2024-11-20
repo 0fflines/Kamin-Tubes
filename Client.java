@@ -13,7 +13,7 @@ public class Client {
 
     public Client(){
         try{
-            socket = new Socket("localhost", 3030);
+            socket = new Socket("localhost", Server.PORT);
             out = new DataOutputStream(socket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             sc = new Scanner(System.in);
@@ -22,7 +22,7 @@ public class Client {
             close();
         }catch(IOException e){
             e.printStackTrace();
-        } 
+        }
     }
 
     private void writeMessage() throws IOException{
