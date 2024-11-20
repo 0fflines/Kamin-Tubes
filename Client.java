@@ -34,7 +34,6 @@ public class Client {
 
             String serverResponse = in.readLine();
             System.out.println(serverResponse);
-            System.out.println(in.readLine());
         }
         close();
     }

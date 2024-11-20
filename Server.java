@@ -42,10 +42,9 @@ public class Server {
         String inputMessage = "";
         String responseMessage = "";
         while(!inputMessage.equals(STOP_STRING)){
-            out.print("Type in your name here: ");
             inputMessage = in.readUTF();
             responseMessage = "Server Response: Hello " + inputMessage;
-            System.out.println("Recieved from client: "+inputMessage);
+            System.out.println("Received from client: "+inputMessage);
             out.println(responseMessage);
         }
     }
