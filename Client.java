@@ -27,7 +27,6 @@ public class Client {
 
     private void writeMessage() throws IOException{
         String line;
-        System.out.println(in.readLine());
         while(!(line = sc.nextLine()).equals(Server.STOP_STRING)){
             out.writeUTF(line);
             out.flush();
