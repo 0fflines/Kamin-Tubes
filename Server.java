@@ -3,6 +3,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.lang.management.ManagementFactory;
+import com.sun.management.OperatingSystemMXBean;
 
 public class Server {
     private ServerSocket server;
@@ -10,25 +12,33 @@ public class Server {
     private PrintWriter out;
     public static final int PORT = 3030;
     public static final String STOP_STRING = ",,";
-    private Socket clientSocket;
+    private OperatingSystemMXBean osBean;
+    private int clientCount = 0;
 
     public Server(){
+        osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+        System.out.println("Server started");
         try{
             server = new ServerSocket(PORT);
-            iniConnections();
+            while(true) {
+                iniConnections();
+            }
         }catch(IOException e){
             e.printStackTrace();
         }
     }
 
     public void iniConnections() throws IOException{
-        System.out.println("Server started");
-        clientSocket = server.accept();
-        System.out.println("Client socket accepted");
-        in = new DataInputStream(clientSocket.getInputStream());
-        out = new PrintWriter(clientSocket.getOutputStream(), true);
-        out.println("You're now connected to the Server! Type in "+STOP_STRING +" to stop the program");
-        readMessages();
+        Socket clientSocket = server.accept();
+
+        if(clientSocket.isConnected()) {
+            new Thread(() -> {
+                clientCount++;
+                ConnectedClient client = new ConnectedClient(clientSocket, clientCount, osBean);
+                client.readMessages();
+                client.close();
+            }).start();
+        }
         close();
     }
 
@@ -36,17 +46,6 @@ public class Server {
         in.close();
         out.close();
         server.close();
-    }
-
-    public void readMessages() throws IOException{
-        String inputMessage = "";
-        String responseMessage = "";
-        while(!inputMessage.equals(STOP_STRING)){
-            inputMessage = in.readUTF();
-            responseMessage = "Server Response: Hello " + inputMessage;
-            System.out.println("Received from client: "+inputMessage);
-            out.println(responseMessage);
-        }
     }
 
     public static void main(String[] args) {

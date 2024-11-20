@@ -17,7 +17,6 @@ public class Client {
             out = new DataOutputStream(socket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             sc = new Scanner(System.in);
-            System.out.println(in.readLine());
             writeMessage();
             close();
         }catch(IOException e){
@@ -28,11 +27,19 @@ public class Client {
     private void writeMessage() throws IOException{
         String line;
         while(!(line = sc.nextLine()).equals(Server.STOP_STRING)){
-            out.writeUTF(line);
-            out.flush();
+            if(!line.equals("r")) {
+                System.out.println("Wrong command");
+            }else{
+                out.writeUTF(line);
+                out.flush();
 
-            String serverResponse = in.readLine();
-            System.out.println(serverResponse);
+                String serverResponse = "";
+                for(int i = 0;i < 4;i++) {
+                    serverResponse += in.readLine() + "\n";
+                }
+
+                System.out.println(serverResponse);
+            }
         }
         close();
     }
