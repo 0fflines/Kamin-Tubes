@@ -1,4 +1,5 @@
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -25,10 +26,15 @@ public class ConnectedClient {
     public void readMessages() throws IOException{
         String inputMessage = "";
         String responseMessage = "";
-        while(!(inputMessage = in.readUTF()).equals(STOP_STRING)){
-            responseMessage = "Server Response: Hello Client " + id;
-            System.out.println("Received from client " +id +" : "+inputMessage);
-            out.println(responseMessage);
+        try{
+            while(!(inputMessage = in.readUTF()).equals(STOP_STRING)){
+                responseMessage = "Server Response: Hello Client " + id;
+                System.out.println("Received from client " +id +" : "+inputMessage);
+                out.println(responseMessage);
+            }
+        }catch(EOFException e){
+            System.out.println("Socket "+id+" closed");
+            close();
         }
     }
     
