@@ -3,21 +3,26 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.Socket;
 import com.sun.management.OperatingSystemMXBean;
 
 public class ConnectedClient {
     DataInputStream in;
     PrintWriter out;
-    private Socket clientSocket;
+    public Socket clientSocket;
     private OperatingSystemMXBean osBean;
     private int id;
     private final String STOP_STRING = ",,";
+    public InetAddress ipAddress;
+    private Server server;
 
-    ConnectedClient(Socket clientSocket, int id, OperatingSystemMXBean osBean){
+    ConnectedClient(Socket clientSocket, int id, OperatingSystemMXBean osBean, InetAddress ipAddress, Server server){
         this.id = id;
         this.clientSocket = clientSocket;
         this.osBean = osBean;
+        this.ipAddress = ipAddress;
+        this.server = server;
         try{
             this.in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
             this.out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -41,6 +46,12 @@ public class ConnectedClient {
                                     "Total Memory Size: " + totalMemory + " MB\n" +
                                     "Used Memory Size: " + usedMemory + " MB\n" +
                                     "Free Memory Size: " + freeMemory + " MB";
+                if(this.server.activityCount.get(ipAddress) == null){
+                    this.server.activityCount.put(ipAddress, 1.0);
+                }else{
+                    this.server.activityCount.put(ipAddress, this.server.activityCount.get(ipAddress)+1);
+                }
+                
                 out.println(responseMessage);
             }
         }catch(EOFException e){
