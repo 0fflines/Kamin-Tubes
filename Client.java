@@ -28,11 +28,18 @@ public class Client {
     private void writeMessage() throws IOException{
         String line;
         while(!(line = sc.nextLine()).equals(Server.STOP_STRING)){
-            out.writeUTF(line);
-            out.flush();
+            if(!line.equals("r")) {
+                System.out.println("Wrong command");
+            }else{
+                out.writeUTF(line);
+                out.flush();
+                String serverResponse = "";
+                for(int i = 0;i < 4;i++) {
+                    serverResponse += in.readLine() + "\n";
+                }
 
-            String serverResponse = in.readLine();
-            System.out.println(serverResponse);
+                System.out.println(serverResponse);
+            }
         }
         close();
     }
