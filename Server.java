@@ -2,10 +2,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.spi.InetAddressResolver;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Timer;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 
@@ -18,7 +16,7 @@ public class Server {
     private OperatingSystemMXBean osBean;
     private ArrayList<InetAddress> bannedIpAddressArray = new ArrayList<>();
     public HashMap<InetAddress, Double> activityCount = new HashMap<>();
-    private ArrayList<ConnectedClient> listOfConnectedClient = new ArrayList<>();
+    private ArrayList<Socket> listOfConnectedClient = new ArrayList<>();
     private static final double ENTROPY_THRESHOLD = -1;
     private final int DETECTION_TIMER = 2000;
     private final double ZSCORE_THRESHOLD = 3;
@@ -32,7 +30,7 @@ public class Server {
                 public void run() {
                     long currentTime = System.currentTimeMillis();
                     long targetTime = currentTime+DETECTION_TIMER;
-                    boolean clientExists = false;
+
                     while(true){
                         if(currentTime >= targetTime){
                             targetTime = currentTime + DETECTION_TIMER;
@@ -64,6 +62,7 @@ public class Server {
 
         //kalo udh di close seharusnya isConnected bakal gagal
         if(clientSocket.isConnected()){
+            listOfConnectedClient.add(clientSocket);
             Thread clientThread = new Thread(){
                 @Override
                 public void run() {
@@ -117,12 +116,17 @@ public class Server {
         for(InetAddress ip: activityCount.keySet()){
             totalDeviasi += Math.pow(activityCount.get(ip)-averageActivity, 2);
         }
+        System.out.println("totaldeviasi ="+totalDeviasi);
         totalDeviasi = Math.sqrt(totalDeviasi);
+        System.out.println("totaldeviasi ="+totalDeviasi);
         double standardDeviation = totalDeviasi/uniqueIpCount;
+        System.out.println("uipcount ="+ uniqueIpCount);
+        System.out.println("standarddeviasi ="+standardDeviation);
         
         for(InetAddress ip: activityCount.keySet()){
             double requestRate = activityCount.get(ip)/(DETECTION_TIMER/1000);
             double zScore = (requestRate - averageActivity)/standardDeviation;
+            System.out.println(ip+" ZSCORE =" +zScore);
             if(zScore != ZSCORE_THRESHOLD){
                 ban(ip);
             }
@@ -131,13 +135,14 @@ public class Server {
 
     private void ban(InetAddress ip){
         System.out.println("ban in progress");
-        for(ConnectedClient client: listOfConnectedClient){
-            if(client.ipAddress.equals(ip)){
+        for(Socket client: listOfConnectedClient){
+            if(client.getLocalAddress().equals(ip)){
                 try{
                     listOfConnectedClient.remove(client);
-                    client.clientSocket.close();
+                    client.close();
                     activityCount.remove(ip);
                     bannedIpAddressArray.add(ip);
+                    break;
                 }catch(IOException e){
                     e.printStackTrace();
                 }
@@ -147,6 +152,7 @@ public class Server {
 
     private void printBannedIp(){
         System.out.println("----------------");
+        System.out.println("Banned IP:");
         for(InetAddress ip: bannedIpAddressArray){
             System.out.println(ip);
         }

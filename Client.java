@@ -45,10 +45,11 @@ public class Client {
     }
 
     private void close() throws IOException{
+        socket.close();
+        System.out.println("closed");
         in.close();
         out.close();
         sc.close();
-        socket.close();
     }
 
     public static void main(String[] args) {

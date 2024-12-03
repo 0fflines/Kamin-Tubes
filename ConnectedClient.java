@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
+
 import com.sun.management.OperatingSystemMXBean;
 
 public class ConnectedClient {
@@ -48,15 +50,17 @@ public class ConnectedClient {
                                     "Free Memory Size: " + freeMemory + " MB";
                 if(this.server.activityCount.get(ipAddress) == null){
                     this.server.activityCount.put(ipAddress, 1.0);
+                    System.out.println("tambah activity initial");
                 }else{
                     this.server.activityCount.put(ipAddress, this.server.activityCount.get(ipAddress)+1);
+                    System.out.println("tambah activity");
                 }
                 
                 out.println(responseMessage);
             }
-        }catch(EOFException e){
+        }catch(SocketException e){
             System.out.println("Socket "+id+" closed");
-            close();
+            // close();
         }
     }
 
