@@ -59,24 +59,25 @@ public class Server {
         if(checkBannedIp(clientSocket.getInetAddress()) == true){
             clientSocket.close();
         }
-
-        //kalo udh di close seharusnya isConnected bakal gagal
-        if(clientSocket.isConnected()){
-            listOfConnectedClient.add(clientSocket);
-            Thread clientThread = new Thread(){
-                @Override
-                public void run() {
-                    ConnectedClient client = new ConnectedClient(clientSocket, clientCount, osBean, clientSocket.getInetAddress(), getServer());
-                    System.out.println("Client "+clientCount+" connected");
-                    clientCount++;
-                    try{
-                        client.readMessages();
-                    }catch(IOException e){
-                        e.printStackTrace();
-                    }
+        else{
+            //kalo udh di close seharusnya isConnected bakal gagal
+            if(clientSocket.isConnected()){
+                listOfConnectedClient.add(clientSocket);
+                Thread clientThread = new Thread(){
+                    @Override
+                    public void run() {
+                        ConnectedClient client = new ConnectedClient(clientSocket, clientCount, osBean, clientSocket.getInetAddress(), getServer());
+                        System.out.println("Client "+clientCount+" connected");
+                        clientCount++;
+                        try{
+                            client.readMessages();
+                        }catch(IOException e){
+                            e.printStackTrace();
+                        }
+                    };
                 };
-            };
-            clientThread.start();;
+                clientThread.start();;
+            }
         }
     }
 
