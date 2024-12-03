@@ -56,7 +56,7 @@ public class Server {
 
     public void iniConnections() throws IOException{
         clientSocket = server.accept();
-        if(checkBannedIp(clientSocket.getLocalAddress()) == true){
+        if(checkBannedIp(clientSocket.getInetAddress()) == true){
             clientSocket.close();
         }
 
@@ -66,7 +66,7 @@ public class Server {
             Thread clientThread = new Thread(){
                 @Override
                 public void run() {
-                    ConnectedClient client = new ConnectedClient(clientSocket, clientCount, osBean, clientSocket.getLocalAddress(), getServer());
+                    ConnectedClient client = new ConnectedClient(clientSocket, clientCount, osBean, clientSocket.getInetAddress(), getServer());
                     System.out.println("Client "+clientCount+" connected");
                     clientCount++;
                     try{
@@ -136,7 +136,7 @@ public class Server {
     private void ban(InetAddress ip){
         System.out.println("ban in progress");
         for(Socket client: listOfConnectedClient){
-            if(client.getLocalAddress().equals(ip)){
+            if(client.getInetAddress().equals(ip)){
                 try{
                     listOfConnectedClient.remove(client);
                     client.close();
