@@ -50,10 +50,8 @@ public class ConnectedClient {
                                     "Free Memory Size: " + freeMemory + " MB";
                 if(this.server.activityCount.get(ipAddress) == null){
                     this.server.activityCount.put(ipAddress, 1.0);
-                    System.out.println("tambah activity initial");
                 }else{
                     this.server.activityCount.put(ipAddress, this.server.activityCount.get(ipAddress)+1);
-                    System.out.println("tambah activity");
                 }
                 
                 out.println(responseMessage);

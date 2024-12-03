@@ -4,6 +4,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 
@@ -15,6 +17,7 @@ public class Server {
     private int clientCount=1;
     private OperatingSystemMXBean osBean;
     private ArrayList<InetAddress> bannedIpAddressArray = new ArrayList<>();
+    private ConcurrentLinkedQueue<InetAddress> bannedIpAddressQueue = new ConcurrentLinkedQueue<>();
     public HashMap<InetAddress, Double> activityCount = new HashMap<>();
     private ArrayList<Socket> listOfConnectedClient = new ArrayList<>();
     private static final double ENTROPY_THRESHOLD = -1;
@@ -56,8 +59,10 @@ public class Server {
 
     public void iniConnections() throws IOException{
         clientSocket = server.accept();
-        if(checkBannedIp(clientSocket.getInetAddress()) == true){
+        boolean isBanned = checkBannedIp(clientSocket.getInetAddress());
+        if(isBanned){
             clientSocket.close();
+            return;
         }
         else{
             //kalo udh di close seharusnya isConnected bakal gagal
@@ -81,8 +86,8 @@ public class Server {
         }
     }
 
-    public boolean checkBannedIp(InetAddress ip){
-        for(InetAddress bannedIp: bannedIpAddressArray){
+    public synchronized boolean checkBannedIp(InetAddress ip){
+        for(InetAddress bannedIp: bannedIpAddressQueue){
             if(bannedIp.equals(ip)) return true;
         }
         return false;
@@ -134,19 +139,38 @@ public class Server {
         }
     }
 
-    private void ban(InetAddress ip){
+    private synchronized void ban(InetAddress ip){
         System.out.println("ban in progress");
+        ArrayList<InetAddress> flaggedIp = new ArrayList<>();
+        ArrayList<Socket> flaggedSocket = new ArrayList<>();
         for(Socket client: listOfConnectedClient){
             if(client.getInetAddress().equals(ip)){
-                try{
-                    listOfConnectedClient.remove(client);
-                    client.close();
-                    activityCount.remove(ip);
-                    bannedIpAddressArray.add(ip);
-                    break;
-                }catch(IOException e){
-                    e.printStackTrace();
-                }
+                // try{
+                //     listOfConnectedClient.remove(client);
+                //     client.close();
+                //     activityCount.remove(ip);
+                //     bannedIpAddressArray.add(ip);
+                //     bannedIpAddressQueue.add(ip);
+                //     break;
+                // }catch(IOException e){
+                //     e.printStackTrace();
+                // }
+                if(!flaggedIp.contains(ip))flaggedIp.add(ip);
+                flaggedSocket.add(client);
+            }
+        }
+
+        for(InetAddress banIp: flaggedIp){
+            activityCount.remove(banIp);
+            bannedIpAddressQueue.add(banIp);
+        }
+        for(Socket bannedSocket: flaggedSocket){
+            try {
+                bannedSocket.close();
+                listOfConnectedClient.remove(bannedSocket);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         }
     }
@@ -154,7 +178,7 @@ public class Server {
     private void printBannedIp(){
         System.out.println("----------------");
         System.out.println("Banned IP:");
-        for(InetAddress ip: bannedIpAddressArray){
+        for(InetAddress ip: bannedIpAddressQueue){
             System.out.println(ip);
         }
         System.out.println("----------------");
