@@ -13,7 +13,7 @@ public class Client {
 
     public Client(){
         try{
-            socket = new Socket("localhost", Server.PORT);
+            socket = new Socket("192.168.68.160", Server.PORT);
             out = new DataOutputStream(socket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             sc = new Scanner(System.in);
