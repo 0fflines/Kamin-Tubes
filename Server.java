@@ -23,8 +23,8 @@ public class Server {
     public ConcurrentHashMap<InetAddress, Double> activityCount = new ConcurrentHashMap<InetAddress, Double>();
     private ArrayList<Socket> listOfConnectedClient = new ArrayList<>();
     private static final double ENTROPY_THRESHOLD = 0.3;
-    private final int DETECTION_TIMER = 2000;
-    private final double ZSCORE_THRESHOLD = 0.5;
+    private final int DETECTION_TIMER = 5000;
+    private final double ZSCORE_THRESHOLD = 0.3;
 
     public Server(){
         osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
@@ -134,6 +134,7 @@ public class Server {
         for(InetAddress ip: ipKeyMap){
             double requestRate = activityCount.get(ip)/(DETECTION_TIMER/1000);
             double zScore = (requestRate - averageActivity)/standardDeviation;
+            System.out.println(ip+" ZSCORE ="+zScore);
             if(zScore > ZSCORE_THRESHOLD){
                 ban(ip);
             }
@@ -193,6 +194,7 @@ public class Server {
     private void printBannedIp(){
         System.out.println("----------------");
         System.out.println("Banned IP:");
+        System.out.println(bannedIpAddressArray);
         for(InetAddress ip: bannedIpAddressArray){
             System.out.println(ip);
         }
