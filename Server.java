@@ -4,8 +4,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Set;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 
@@ -17,7 +16,6 @@ public class Server {
     private int clientCount=1;
     private OperatingSystemMXBean osBean;
     private ArrayList<InetAddress> bannedIpAddressArray = new ArrayList<>();
-    private ConcurrentLinkedQueue<InetAddress> bannedIpAddressQueue = new ConcurrentLinkedQueue<>();
     public HashMap<InetAddress, Double> activityCount = new HashMap<>();
     private ArrayList<Socket> listOfConnectedClient = new ArrayList<>();
     private static final double ENTROPY_THRESHOLD = -1;
@@ -87,7 +85,7 @@ public class Server {
     }
 
     public synchronized boolean checkBannedIp(InetAddress ip){
-        for(InetAddress bannedIp: bannedIpAddressQueue){
+        for(InetAddress bannedIp: bannedIpAddressArray){
             if(bannedIp.equals(ip)) return true;
         }
         return false;
@@ -129,7 +127,8 @@ public class Server {
         System.out.println("uipcount ="+ uniqueIpCount);
         System.out.println("standarddeviasi ="+standardDeviation);
         
-        for(InetAddress ip: activityCount.keySet()){
+        Set<InetAddress> ipKeyMap = activityCount.keySet();
+        for(InetAddress ip: ipKeyMap){
             double requestRate = activityCount.get(ip)/(DETECTION_TIMER/1000);
             double zScore = (requestRate - averageActivity)/standardDeviation;
             System.out.println(ip+" ZSCORE =" +zScore);
@@ -141,44 +140,58 @@ public class Server {
 
     private synchronized void ban(InetAddress ip){
         System.out.println("ban in progress");
-        ArrayList<InetAddress> flaggedIp = new ArrayList<>();
-        ArrayList<Socket> flaggedSocket = new ArrayList<>();
-        for(Socket client: listOfConnectedClient){
+        // ArrayList<InetAddress> flaggedIp = new ArrayList<>();
+        // ArrayList<Socket> flaggedSocket = new ArrayList<>();
+        for(int i = 0; i < listOfConnectedClient.size();  i++){
+            Socket client = listOfConnectedClient.get(i);
             if(client.getInetAddress().equals(ip)){
-                // try{
-                //     listOfConnectedClient.remove(client);
-                //     client.close();
-                //     activityCount.remove(ip);
-                //     bannedIpAddressArray.add(ip);
-                //     bannedIpAddressQueue.add(ip);
-                //     break;
-                // }catch(IOException e){
-                //     e.printStackTrace();
-                // }
-                if(!flaggedIp.contains(ip))flaggedIp.add(ip);
-                flaggedSocket.add(client);
+                try{
+                    listOfConnectedClient.remove(client);
+                    client.close();
+                    activityCount.remove(ip);
+                    bannedIpAddressArray.add(ip);
+                    break;
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
             }
         }
+        // for(Socket client: listOfConnectedClient){
+        //     if(client.getInetAddress().equals(ip)){
+        //         // try{
+        //         //     listOfConnectedClient.remove(client);
+        //         //     client.close();
+        //         //     activityCount.remove(ip);
+        //         //     bannedIpAddressArray.add(ip);
+        //         //     bannedIpAddressArray.add(ip);
+        //         //     break;
+        //         // }catch(IOException e){
+        //         //     e.printStackTrace();
+        //         // }
+        //         if(!flaggedIp.contains(ip))flaggedIp.add(ip);
+        //         flaggedSocket.add(client);
+        //     }
+        // }
 
-        for(InetAddress banIp: flaggedIp){
-            activityCount.remove(banIp);
-            bannedIpAddressQueue.add(banIp);
-        }
-        for(Socket bannedSocket: flaggedSocket){
-            try {
-                bannedSocket.close();
-                listOfConnectedClient.remove(bannedSocket);
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
+        // for(InetAddress banIp: flaggedIp){
+        //     activityCount.remove(banIp);
+        //     bannedIpAddressArray.add(banIp);
+        // }
+        // for(Socket bannedSocket: flaggedSocket){
+        //     try {
+        //         bannedSocket.close();
+        //         listOfConnectedClient.remove(bannedSocket);
+        //     } catch (IOException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // }
     }
 
     private void printBannedIp(){
         System.out.println("----------------");
         System.out.println("Banned IP:");
-        for(InetAddress ip: bannedIpAddressQueue){
+        for(InetAddress ip: bannedIpAddressArray){
             System.out.println(ip);
         }
         System.out.println("----------------");
