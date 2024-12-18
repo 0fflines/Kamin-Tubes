@@ -11,7 +11,7 @@ public class BotClient {
 
     public BotClient(){
         try{
-            socket = new Socket("localhost", Server.PORT);
+            socket = new Socket("192.168.68.162", Server.PORT);
             out = new DataOutputStream(socket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             System.out.println(in.readLine());

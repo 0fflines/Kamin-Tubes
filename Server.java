@@ -5,6 +5,10 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 
@@ -16,33 +20,22 @@ public class Server {
     private int clientCount=1;
     private OperatingSystemMXBean osBean;
     private ArrayList<InetAddress> bannedIpAddressArray = new ArrayList<>();
-    public HashMap<InetAddress, Double> activityCount = new HashMap<>();
+    public ConcurrentHashMap<InetAddress, Double> activityCount = new ConcurrentHashMap<InetAddress, Double>();
     private ArrayList<Socket> listOfConnectedClient = new ArrayList<>();
-    private static final double ENTROPY_THRESHOLD = -1;
+    private static final double ENTROPY_THRESHOLD = 0.3;
     private final int DETECTION_TIMER = 2000;
-    private final double ZSCORE_THRESHOLD = 3;
+    private final double ZSCORE_THRESHOLD = 0.5;
 
     public Server(){
         osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         try{
             server = new ServerSocket(PORT);
             System.out.println("Server started");
-            Thread timer = new Thread(){
-                public void run() {
-                    long currentTime = System.currentTimeMillis();
-                    long targetTime = currentTime+DETECTION_TIMER;
-
-                    while(true){
-                        if(currentTime >= targetTime){
-                            targetTime = currentTime + DETECTION_TIMER;
-                            entropyDetection();
-                            activityCount.clear();
-                        }
-                        currentTime = System.currentTimeMillis();
-                    }
-                };
-            };
-            timer.start();
+            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+            scheduler.scheduleAtFixedRate(() -> {
+                entropyDetection();
+                activityCount.clear();
+            }, 0, DETECTION_TIMER, TimeUnit.MILLISECONDS);
             while(true){
                 iniConnections();
             }
@@ -70,7 +63,7 @@ public class Server {
                     @Override
                     public void run() {
                         ConnectedClient client = new ConnectedClient(clientSocket, clientCount, osBean, clientSocket.getInetAddress(), getServer());
-                        System.out.println("Client "+clientCount+" connected");
+                        // System.out.println("Client "+clientCount+" connected");
                         clientCount++;
                         try{
                             client.readMessages();
@@ -93,13 +86,20 @@ public class Server {
 
     public void entropyDetection(){
         double entropy = 0;
+        double totalActivity = 0;
+        System.out.println(activityCount);
+        for(InetAddress ip: activityCount.keySet()){
+            totalActivity += activityCount.get(ip);
+        }
         for(InetAddress ip: activityCount.keySet()){
             //entropy -= activity*(log2 activity)
-            entropy -= (activityCount.get(ip))*(Math.log(activityCount.get(ip))/(Math.log(2)));
+            //10log b / 10log a = alog b
+            double probability = activityCount.get(ip)/totalActivity;
+            entropy -= probability*(Math.log(probability)/(Math.log(2)));
         }
         System.out.println("Entropy: "+entropy);
         printBannedIp();
-        if(entropy < ENTROPY_THRESHOLD){
+        if(activityCount.keySet().size() > 1 &&entropy < ENTROPY_THRESHOLD){
             System.out.println("DDOS detected");
             findAttacker();
         }
@@ -109,30 +109,32 @@ public class Server {
         //hitung average activity
         double averageActivity=0;
         int uniqueIpCount=0;
-        for(InetAddress ip: activityCount.keySet()){
-            averageActivity += activityCount.get(ip);
-            uniqueIpCount += 1;
-        }
+        // for(InetAddress ip: activityCount.keySet()){
+        //     averageActivity += activityCount.get(ip);
+        //     uniqueIpCount += 1;
+        // }
+        uniqueIpCount = activityCount.keySet().size();
+        // System.out.println(activityCount.keySet());
+
         averageActivity /= uniqueIpCount;
+        // System.out.println("uipcount ="+ uniqueIpCount);
 
         //hitung standard deviasi
         double totalDeviasi = 0;
         for(InetAddress ip: activityCount.keySet()){
             totalDeviasi += Math.pow(activityCount.get(ip)-averageActivity, 2);
         }
-        System.out.println("totaldeviasi ="+totalDeviasi);
+        // System.out.println("totaldeviasi ="+totalDeviasi);
         totalDeviasi = Math.sqrt(totalDeviasi);
-        System.out.println("totaldeviasi ="+totalDeviasi);
+        // System.out.println("totaldeviasi ="+totalDeviasi);
         double standardDeviation = totalDeviasi/uniqueIpCount;
-        System.out.println("uipcount ="+ uniqueIpCount);
-        System.out.println("standarddeviasi ="+standardDeviation);
+        // System.out.println("standarddeviasi ="+standardDeviation);
         
         Set<InetAddress> ipKeyMap = activityCount.keySet();
         for(InetAddress ip: ipKeyMap){
             double requestRate = activityCount.get(ip)/(DETECTION_TIMER/1000);
             double zScore = (requestRate - averageActivity)/standardDeviation;
-            System.out.println(ip+" ZSCORE =" +zScore);
-            if(zScore != ZSCORE_THRESHOLD){
+            if(zScore > ZSCORE_THRESHOLD){
                 ban(ip);
             }
         }
@@ -149,7 +151,7 @@ public class Server {
                     listOfConnectedClient.remove(client);
                     client.close();
                     activityCount.remove(ip);
-                    bannedIpAddressArray.add(ip);
+                    if(!bannedIpAddressArray.contains(ip))bannedIpAddressArray.add(ip);
                     break;
                 }catch(IOException e){
                     e.printStackTrace();

@@ -28,7 +28,7 @@ public class ConnectedClient {
         try{
             this.in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
             this.out = new PrintWriter(clientSocket.getOutputStream(), true);
-            out.println("You are connected as client "+id);
+            out.println("You are connected as client "+id +" with ip "+ipAddress);
         }catch(IOException e){
             e.printStackTrace();
         }
@@ -48,16 +48,18 @@ public class ConnectedClient {
                                     "Total Memory Size: " + totalMemory + " MB\n" +
                                     "Used Memory Size: " + usedMemory + " MB\n" +
                                     "Free Memory Size: " + freeMemory + " MB";
-                if(this.server.activityCount.get(ipAddress) == null){
-                    this.server.activityCount.put(ipAddress, 1.0);
-                }else{
-                    this.server.activityCount.put(ipAddress, this.server.activityCount.get(ipAddress)+1);
-                }
+                // if(this.server.activityCount.get(ipAddress) == null){
+                //     this.server.activityCount.put(ipAddress, 1.0);
+                // }else{
+                //     this.server.activityCount.put(ipAddress, this.server.activityCount.get(ipAddress)+1);
+                // }
+                this.server.activityCount.merge(ipAddress, 1.0, Double::sum);
+
                 
                 out.println(responseMessage);
             }
         }catch(SocketException e){
-            System.out.println("Socket "+id+" closed");
+            // System.out.println("Socket "+id+" closed");
             // close();
         }
     }
