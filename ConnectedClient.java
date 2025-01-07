@@ -1,6 +1,5 @@
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;

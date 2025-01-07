@@ -3,7 +3,6 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -99,7 +98,7 @@ public class Server {
         }
         System.out.println("Entropy: "+entropy);
         printBannedIp();
-        if(activityCount.keySet().size() > 1 &&entropy < ENTROPY_THRESHOLD){
+        if(activityCount.keySet().size() > 1 && entropy < ENTROPY_THRESHOLD){
             System.out.println("DDOS detected");
             findAttacker();
         }
@@ -107,16 +106,18 @@ public class Server {
 
     public void findAttacker(){
         //hitung average activity
+        System.out.println("ban search");
         double averageActivity=0;
         int uniqueIpCount=0;
-        // for(InetAddress ip: activityCount.keySet()){
-        //     averageActivity += activityCount.get(ip);
-        //     uniqueIpCount += 1;
-        // }
+        for(InetAddress ip: activityCount.keySet()){
+            averageActivity += activityCount.get(ip);
+            uniqueIpCount += 1;
+        }
         uniqueIpCount = activityCount.keySet().size();
         // System.out.println(activityCount.keySet());
 
         averageActivity /= uniqueIpCount;
+        System.out.println(averageActivity);
         // System.out.println("uipcount ="+ uniqueIpCount);
 
         //hitung standard deviasi
@@ -128,11 +129,12 @@ public class Server {
         totalDeviasi = Math.sqrt(totalDeviasi);
         // System.out.println("totaldeviasi ="+totalDeviasi);
         double standardDeviation = totalDeviasi/uniqueIpCount;
+        System.out.println(standardDeviation);
         // System.out.println("standarddeviasi ="+standardDeviation);
         
         Set<InetAddress> ipKeyMap = activityCount.keySet();
         for(InetAddress ip: ipKeyMap){
-            double requestRate = activityCount.get(ip)/(DETECTION_TIMER/1000);
+            double requestRate = activityCount.get(ip);
             double zScore = (requestRate - averageActivity)/standardDeviation;
             System.out.println(ip+" ZSCORE ="+zScore);
             if(zScore > ZSCORE_THRESHOLD){
