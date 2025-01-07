@@ -197,9 +197,6 @@ public class Server {
         System.out.println("----------------");
         System.out.println("Banned IP:");
         System.out.println(bannedIpAddressArray);
-        for(InetAddress ip: bannedIpAddressArray){
-            System.out.println(ip);
-        }
         System.out.println("----------------");
     }
 
